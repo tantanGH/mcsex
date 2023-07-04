@@ -121,7 +121,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
 
   struct FILBUF filbuf;
   if (FILES(&filbuf, mcs_file_name, 0x21) < 0) {
-    printf("error: MCS file open error.\n");
+    printf("error: MACS file open error.\n");
     goto exit;
   }
 
@@ -132,15 +132,37 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     goto exit;
   }
 
+  // open file
   fp = fopen(mcs_file_name, "rb");
   if (fp == NULL) {
-    printf("error: MCS file open error.\n");
+    printf("error: MACS file open error.\n");
     goto exit;
   }
 
-  printf("Now Loading ... Press [ESC]/[Q] to cancel.\n");
+  // read header
+  size_t read_len = fread(mcs_file_buffer, 1, 512, fp);
+  if (read_len < 64 || memcmp(mcs_file_buffer, "MACSDATA", 8) != 0) {
+    printf("error: not MACS data.\n");
+    goto exit;
+  }
+  printf("\nFILENAME:%s\n", mcs_file_name);
+  printf("FILESIZE:%d bytes\n", mcs_file_len);
+  size_t header_ofs = 8;
+  while (header_ofs < read_len) {
+    if (memcmp(mcs_file_buffer + header_ofs, "DUALPCM/PCM8PP:", 15) == 0 ||
+        memcmp(mcs_file_buffer + header_ofs, "PCM8PP:", 7) == 0 ||
+        memcmp(mcs_file_buffer + header_ofs, "ADPCM:", 6) == 0 ||
+        memcmp(mcs_file_buffer + header_ofs, "TITLE:", 6) == 0 ||
+        memcmp(mcs_file_buffer + header_ofs, "COMMENT:", 8) == 0) {
+      printf("%s\n", mcs_file_buffer + header_ofs);
+      header_ofs += strlen(mcs_file_buffer + header_ofs);
+    }
+    header_ofs++;
+  }
+
+  // read body
+  printf("\nNow Loading ... Press [ESC]/[Q] to cancel.\n");
   uint32_t t0 = ONTIME();
-  size_t read_len = 0;
   do {
     size_t remain = mcs_file_len - read_len;
     size_t len = fread(mcs_file_buffer + read_len, 1, chunk_size < remain ? chunk_size : remain, fp);
@@ -157,7 +179,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   } while (read_len < mcs_file_len);
 
   if (read_len < mcs_file_len) {
-    printf("\nerror: MCS file read error.\n");
+    printf("\nerror: MACS file read error.\n");
     goto exit;
   } else {
     uint32_t t1 = ONTIME();
