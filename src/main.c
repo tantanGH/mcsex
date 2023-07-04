@@ -145,23 +145,30 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     printf("error: not MACS data.\n");
     goto exit;
   }
-  printf("\nFILENAME:%s\n", mcs_file_name);
-  printf("FILESIZE:%d bytes\n", mcs_file_len);
+  printf("\n");
+  printf("File name   : %s\n", mcs_file_name);
+  printf("File size   : %d bytes\n", mcs_file_len);
   size_t header_ofs = 8;
   while (header_ofs < read_len) {
     if (memcmp(mcs_file_buffer + header_ofs, "DUALPCM/PCM8PP:", 15) == 0 ||
         memcmp(mcs_file_buffer + header_ofs, "PCM8PP:", 7) == 0 ||
-        memcmp(mcs_file_buffer + header_ofs, "ADPCM:", 6) == 0 ||
-        memcmp(mcs_file_buffer + header_ofs, "TITLE:", 6) == 0 ||
-        memcmp(mcs_file_buffer + header_ofs, "COMMENT:", 8) == 0) {
-      printf("%s\n", mcs_file_buffer + header_ofs);
+        memcmp(mcs_file_buffer + header_ofs, "ADPCM:", 6) == 0) {
+      printf("Audio codec : %s\n", mcs_file_buffer + header_ofs);
+      header_ofs += strlen(mcs_file_buffer + header_ofs);
+    }
+    if (memcmp(mcs_file_buffer + header_ofs, "TITLE:", 6) == 0) {
+      printf("Title       : %s\n", mcs_file_buffer + header_ofs + 6);
+      header_ofs += strlen(mcs_file_buffer + header_ofs);
+    }
+    if (memcmp(mcs_file_buffer + header_ofs, "COMMENT:", 8) == 0) {
+      printf("Comment     : %s\n", mcs_file_buffer + header_ofs + 8);
       header_ofs += strlen(mcs_file_buffer + header_ofs);
     }
     header_ofs++;
   }
 
   // read body
-  printf("\nNow Loading ... Press [ESC]/[Q] to cancel.\n");
+  printf("\nNow loading ... Press [ESC]/[Q] to cancel.\n");
   uint32_t t0 = ONTIME();
   do {
     size_t remain = mcs_file_len - read_len;
