@@ -172,6 +172,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // read body
   printf("\nNow loading ... Press [ESC]/[Q] to cancel.\n");
   uint32_t t0 = ONTIME();
+  g_abort_flag = 0;
   do {
     size_t remain = mcs_file_len - read_len;
     size_t len = fread(mcs_file_buffer + read_len, 1, chunk_size < remain ? chunk_size : remain, fp);
@@ -184,6 +185,10 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
         printf("\nCanceled.\n");
         goto exit;
       }
+    }
+    if (g_abort_flag) {
+      printf("\nCanceled.\n");
+      goto exit;
     }
   } while (read_len < mcs_file_len);
 
