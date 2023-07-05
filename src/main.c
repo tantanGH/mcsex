@@ -119,12 +119,14 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     goto exit;
   }
 
+  // get file attrib
   struct FILBUF filbuf;
   if (FILES(&filbuf, mcs_file_name, 0x21) < 0) {
     printf("error: MACS file open error.\n");
     goto exit;
   }
 
+  // allocate high memory buffer
   size_t mcs_file_len = filbuf.filelen;
   mcs_file_buffer = himem_malloc(mcs_file_len, 1);
   if (mcs_file_buffer == NULL) {
@@ -185,6 +187,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     }
   } while (read_len < mcs_file_len);
 
+  // read check
   if (read_len < mcs_file_len) {
     printf("\nerror: MACS file read error.\n");
     goto exit;
@@ -195,6 +198,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
 
 loop:
 
+  // play
   int32_t rc_macs = macs_play(mcs_file_buffer);
   if (rc_macs == -4) {
     printf("Aborted.\n");
@@ -207,6 +211,7 @@ loop:
     goto exit;
   }
 
+  // loop check
   if (loop_count == 0 || --loop_count > 0) goto loop;
 
 exit:
@@ -224,9 +229,6 @@ exit:
   }
 
   // flush key buffer
-//  while (B_KEYSNS() != 0) {
-//    B_KEYINP();
-//  }
   KFLUSHIO(0xff);
 
   // resume abort vectors
