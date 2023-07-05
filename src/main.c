@@ -78,7 +78,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   uint32_t abort_vector2 = INTVCS(0xFFF2, (int8_t*)abort_application);  
 
   // credit
-  printf("MCSEX.X - Yet another high memory MACS player version " PROGRAM_VERSION " by tantan\n");
+  printf("MCSEX.X - Yet another high memory MACS loader version " PROGRAM_VERSION " by tantan\n");
 
   // parse command lines
   for (int16_t i = 1; i < argc; i++) {
