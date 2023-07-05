@@ -55,7 +55,7 @@ MCSEXxxx.ZIP をダウンロードして、MCSEX.X をパスの通ったディ�
  - ハイメモリドライバ (060turbo.sys または TS16DRVp.X)
 
 SCSIディスクからデータを読み込む場合には TS16FILE.X が必須ですが、特にチェックしていませんのでくれぐれも注意してください。
-VDISK(PhantomX), HFS(XEiJ) の場合は必要ありません。
+VDISK(PhantomX), HFS(XEiJ) の場合は必要ありません。Windrvは環境が無いので未確認です。
 
 ---
 
