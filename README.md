@@ -33,6 +33,7 @@ MCSEXxxx.ZIP をダウンロードして、MCSEX.X をパスの通ったディ�
            -h    ... show help message
 
 単純に、
+
     mcsex hogehoge.mcs
 
 で再生を開始します。
