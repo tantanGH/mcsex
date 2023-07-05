@@ -20,10 +20,26 @@
 // application
 #include "mcsex.h"
 
+// mcs file buffer (high memory)
+static uint8_t* mcs_file_buffer = NULL;
+
 // abort vector handler
-static volatile int32_t g_abort_flag = 0;
 static void abort_application() {
-  g_abort_flag = 1;
+  
+  // reclaim high memory
+  if (mcs_file_buffer != NULL) {
+    himem_free(mcs_file_buffer, 1);
+    mcs_file_buffer = NULL;
+  }
+
+  // flush key buffer
+  KFLUSHIO(0xff);
+
+  // cursor on
+  C_CURON();
+
+  // abort exit
+  EXIT2(1);
 }
 
 //
@@ -53,9 +69,6 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
 
   // mcs file name
   uint8_t* mcs_file_name = NULL;
-
-  // mcs file buffer
-  uint8_t* mcs_file_buffer = NULL;
 
   // mcs file handle
   FILE* fp = NULL;
@@ -119,6 +132,9 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     goto exit;
   }
 
+  // cursor off
+  C_CUROFF();
+
   // get file attrib
   struct FILBUF filbuf;
   if (FILES(&filbuf, mcs_file_name, 0x21) < 0) {
@@ -172,7 +188,6 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // read body
   printf("\nNow loading ... Press [ESC]/[Q] to cancel.\n");
   uint32_t t0 = ONTIME();
-  g_abort_flag = 0;
   do {
     size_t remain = mcs_file_len - read_len;
     size_t len = fread(mcs_file_buffer + read_len, 1, chunk_size < remain ? chunk_size : remain, fp);
@@ -185,10 +200,6 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
         printf("\nCanceled.\n");
         goto exit;
       }
-    }
-    if (g_abort_flag) {
-      printf("\nCanceled.\n");
-      goto exit;
     }
   } while (read_len < mcs_file_len);
 
@@ -235,6 +246,9 @@ exit:
 
   // flush key buffer
   KFLUSHIO(0xff);
+
+  // cursor on
+  C_CURON();
 
   // resume abort vectors
   INTVCS(0xFFF1, (int8_t*)abort_vector1);
