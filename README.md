@@ -1,11 +1,12 @@
 # MCSEX.X
-Yet another high memory MACS player for Human68k/X680x0
+
+Yet another high memory MACS loader for Human68k/X680x0
 
 ---
 
 ## About This
 
-巷に星の数ほど存在するMACSプレーヤ(ローダ)の末席に... 自分にとって必要なものだけを実装しました。
+巷に星の数ほど存在するMACSローダ(プレーヤ)の末席に... 自分にとって必要なものだけを実装しました。
 
  - ハイメモリ専用
  - ディスクからハイメモリに高速ダイレクトロード (SCSIの場合は TS16FILE.X必須)
