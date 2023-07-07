@@ -247,6 +247,9 @@ exit:
   // flush key buffer
   KFLUSHIO(0xff);
 
+  // graphic on & palette clear
+  G_CLR_ON();
+
   // cursor on
   C_CURON();
 
