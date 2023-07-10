@@ -12,6 +12,10 @@
 #include "keyboard.h"
 #include "himem.h"
 
+// uart
+#include "uart.h"
+#include "rss.h"
+
 // drivers
 #include "pcm8a.h"
 #include "pcm8pp.h"
@@ -48,9 +52,11 @@ static void abort_application() {
 static void show_help_message() {
   printf("usage: mcsex [options] <filename.mcs>\n");
   printf("options:\n");
-  printf("       -l<n> ... loop count (0=endless, default:1)\n");
+  printf("       -l<n> ... loop count (0=endless, default:no loop)\n");
   printf("       -b<n> ... bulk load chunk size in MB (1-32, default:16)\n");
   printf("       -h    ... show help message\n");
+  printf("\n");
+  printf("       -r <remote-mcs-path> ... remote mcs/pcm path (for s44rasp)\n");
 }
 
 //
@@ -70,8 +76,26 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // mcs file name
   uint8_t* mcs_file_name = NULL;
 
+  // remote mcs use
+  int16_t use_remote_mcs = 0;
+
+  // remote mcs path
+  uint8_t* remote_mcs_path = NULL;
+
+  // baud rate (uart)
+  int32_t baud_rate = 38400;
+
+  // timeout (uart)
+  int32_t timeout = 60;
+
   // mcs file handle
   FILE* fp = NULL;
+
+  // uart instance
+  UART uart = { 0 };
+
+  // rss instance
+  RSS rss = { 0 };
 
   // set abort vectors
   uint32_t abort_vector1 = INTVCS(0xFFF1, (int8_t*)abort_application);
@@ -99,6 +123,10 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
       } else if (argv[i][1] == 'h') {
         show_help_message();
         goto exit;
+      } else if (argv[i][1] == 'r' && i+1 < argc) {
+        use_remote_mcs = 1;
+        remote_mcs_path = argv[i+1];
+        i++;      
       } else {
         show_help_message();
         goto exit;
@@ -132,6 +160,17 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     goto exit;
   }
 
+  if (use_remote_mcs) {
+    // open uart  
+    if (uart_open(&uart, baud_rate, timeout) != 0) {
+      goto exit;
+    }
+    // open rss
+    if (rss_open(&rss) != 0) {
+      goto exit;
+    }
+  }
+
   // cursor off
   C_CUROFF();
 
@@ -150,6 +189,26 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     goto exit;
   }
 
+  if (use_remote_mcs) {
+    // check remote mcs existence and get size
+    uint32_t remote_mcs_size = 0;
+    int32_t rss_result = rss_head_pcm(&rss, remote_mcs_path, &uart, &remote_mcs_size);
+    // check communication result
+    if (rss_result == UART_QUIT || rss_result == UART_EXIT) {
+      printf("\rerror: canceled.\n");
+      goto exit;
+    } else if (rss_result == UART_TIMEOUT) { 
+      printf("\rerror: timeout.\n");
+      goto exit;
+    } else if (rss_result == 404) { 
+      printf("\rerror: not found.\n");
+      goto exit;
+    } else if (rss_result != 200) {
+      printf("\rerror: communication error.\n");
+      goto exit;
+    }
+  }
+
   // open file
   fp = fopen(mcs_file_name, "rb");
   if (fp == NULL) {
@@ -164,22 +223,22 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     goto exit;
   }
   printf("\n");
-  printf("File name   : %s\n", mcs_file_name);
-  printf("File size   : %d bytes\n", mcs_file_len);
+  printf("File name    : %s\n", mcs_file_name);
+  printf("File size    : %d bytes\n", mcs_file_len);
   size_t header_ofs = 8;
   while (header_ofs < read_len) {
     if (memcmp(mcs_file_buffer + header_ofs, "DUALPCM/PCM8PP:", 15) == 0 ||
         memcmp(mcs_file_buffer + header_ofs, "PCM8PP:", 7) == 0 ||
         memcmp(mcs_file_buffer + header_ofs, "ADPCM:", 6) == 0) {
-      printf("Audio codec : %s\n", mcs_file_buffer + header_ofs);
+      printf("Audio format : %s\n", mcs_file_buffer + header_ofs);
       header_ofs += strlen(mcs_file_buffer + header_ofs);
     }
     if (memcmp(mcs_file_buffer + header_ofs, "TITLE:", 6) == 0) {
-      printf("Title       : %s\n", mcs_file_buffer + header_ofs + 6);
+      printf("MACS Title   : %s\n", mcs_file_buffer + header_ofs + 6);
       header_ofs += strlen(mcs_file_buffer + header_ofs);
     }
     if (memcmp(mcs_file_buffer + header_ofs, "COMMENT:", 8) == 0) {
-      printf("Comment     : %s\n", mcs_file_buffer + header_ofs + 8);
+      printf("MACS Comment : %s\n", mcs_file_buffer + header_ofs + 8);
       header_ofs += strlen(mcs_file_buffer + header_ofs);
     }
     header_ofs++;
@@ -214,6 +273,11 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
 
 loop:
 
+  // play remote MCS
+  if (use_remote_mcs) {
+    rss_play_pcm(&rss, remote_mcs_path, &uart);
+  }
+
   // play
   int32_t rc_macs = macs_play(mcs_file_buffer);
   if (rc_macs == -4) {
@@ -225,6 +289,11 @@ loop:
   } else if (rc_macs < 0) {
     printf("error: MACS call returned error code %d.\n", rc_macs);
     goto exit;
+  }
+
+  // stop remote MCS
+  if (use_remote_mcs) {
+    rss_stop_pcm(&rss, &uart);
   }
 
   // loop check
@@ -242,6 +311,15 @@ exit:
   if (mcs_file_buffer != NULL) {
     himem_free(mcs_file_buffer, 1);
     mcs_file_buffer = NULL;
+  }
+
+  if (use_remote_mcs) {
+    // stop pcm
+    rss_stop_pcm(&rss, &uart);
+    // close rss
+    rss_close(&rss);
+    // close uart
+    uart_close(&uart);
   }
 
   // flush key buffer
