@@ -73,6 +73,10 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // chunk size
   int32_t chunk_size = 16 * 1024 * 1024;
 
+  // pcm driver
+  int16_t use_pcm8a = 0;
+  int16_t use_pcm8pp = 0;
+
   // mcs file name
   uint8_t* mcs_file_name = NULL;
 
@@ -149,7 +153,12 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   }
 
   // pcm8a.x / pcm8pp.x check
-  if (!pcm8a_isavailable() && !pcm8pp_isavailable()) {
+  if (pcm8a_isavailable()) {
+    use_pcm8a = 1;
+  } else if (pcm8pp_isavailable()) {
+    use_pcm8pp = 1;
+  }
+  if (!use_pcm8a && !use_pcm8pp) {
     printf("error: PCM8A/PCM8PP is not available.\n");
     goto exit;
   }
@@ -225,12 +234,15 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   printf("\n");
   printf("File name    : %s\n", mcs_file_name);
   printf("File size    : %d bytes\n", mcs_file_len);
+  printf("PCM driver   : %s\n", use_remote_mcs ? "S44RASP" :
+                                use_pcm8a ? "PCM8A" :
+                                use_pcm8pp ? "PCM8PP" : "???");
   size_t header_ofs = 8;
   while (header_ofs < read_len) {
     if (memcmp(mcs_file_buffer + header_ofs, "DUALPCM/PCM8PP:", 15) == 0 ||
         memcmp(mcs_file_buffer + header_ofs, "PCM8PP:", 7) == 0 ||
         memcmp(mcs_file_buffer + header_ofs, "ADPCM:", 6) == 0) {
-      printf("Audio format : %s\n", mcs_file_buffer + header_ofs);
+      printf("PCM format   : %s\n", mcs_file_buffer + header_ofs);
       header_ofs += strlen(mcs_file_buffer + header_ofs);
     }
     if (memcmp(mcs_file_buffer + header_ofs, "TITLE:", 6) == 0) {
