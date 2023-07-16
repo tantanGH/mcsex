@@ -26,7 +26,7 @@ TARGET_FILE = MCSEX.X
 DOCUMENT_FILE = MCSEX.DOC
 
 # Distribution package 
-PACKAGE_FILE = ../MCSEX020.ZIP
+PACKAGE_FILE = ../MCSEX021.ZIP
 
 # ヘッダ検索パス
 INCLUDE_FLAGS = -I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k
@@ -37,13 +37,13 @@ CFLAGS = $(COMMON_FLAGS) -Wno-builtin-declaration-mismatch -fcall-used-d2 -fcall
     -fexec-charset=cp932 -fverbose-asm -fno-defer-pop
 
 # *.c ソースファイル
-C_SRCS = himem.c pcm8a.c pcm8pp.c macsdrv.c uart.c rss.c main.c
+C_SRCS = himem.c pcm8a.c pcm8pp.c macsdrv.c uart.c s44rasp.c main.c
 
 # *.s ソースファイル
 ASM_SRCS = 
 
 # *.h source files
-HEADER_SRCS = keyboard.h himem.h pcm8a.h pcm8pp.h macsdrv.h mcsex.h
+HEADER_SRCS = keyboard.h himem.h pcm8a.h pcm8pp.h macsdrv.h uart.h s44rasp.h mcsex.h
 
 # リンク対象のライブラリファイル
 LIBS =\

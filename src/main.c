@@ -9,12 +9,12 @@
 #include <iocslib.h>
 
 // devices
-#include "keyboard.h"
+//#include "keyboard.h"
 #include "himem.h"
 
 // uart
 #include "uart.h"
-#include "rss.h"
+#include "s44rasp.h"
 
 // drivers
 #include "pcm8a.h"
@@ -98,8 +98,8 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   // uart instance
   UART uart = { 0 };
 
-  // rss instance
-  RSS rss = { 0 };
+  // s44rasp instance
+  S44RASP s44rasp = { 0 };
 
   // set abort vectors
   uint32_t abort_vector1 = INTVCS(0xFFF1, (int8_t*)abort_application);
@@ -146,9 +146,9 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     goto exit;
   }
 
-  // macsdrv.x check
-  if (!macs_isavailable()) {
-    printf("error: MACSDRV is not available.\n");
+  // HIMEM check
+  if (!himem_isavailable()) {
+    printf("error: High memory driver is not available.\n");
     goto exit;
   }
 
@@ -163,9 +163,9 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     goto exit;
   }
 
-  // HIMEM check
-  if (!himem_isavailable()) {
-    printf("error: High memory driver is not available.\n");
+  // macsdrv.x check
+  if (!macsdrv_isavailable()) {
+    printf("error: MACSDRV is not available.\n");
     goto exit;
   }
 
@@ -174,8 +174,8 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     if (uart_open(&uart, baud_rate, timeout) != 0) {
       goto exit;
     }
-    // open rss
-    if (rss_open(&rss) != 0) {
+    // open s44rasp
+    if (s44rasp_open(&s44rasp) != 0) {
       goto exit;
     }
   }
@@ -201,19 +201,19 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   if (use_remote_mcs) {
     // check remote mcs existence and get size
     uint32_t remote_mcs_size = 0;
-    int32_t rss_result = rss_head_pcm(&rss, remote_mcs_path, &uart, &remote_mcs_size);
+    int32_t s44rasp_result = s44rasp_head(&s44rasp, remote_mcs_path, &uart, &remote_mcs_size);
     // check communication result
-    if (rss_result == UART_QUIT || rss_result == UART_EXIT) {
+    if (s44rasp_result == UART_QUIT || s44rasp_result == UART_EXIT) {
       printf("\rerror: canceled.\n");
       goto exit;
-    } else if (rss_result == UART_TIMEOUT) { 
+    } else if (s44rasp_result == UART_TIMEOUT) { 
       printf("\rerror: timeout.\n");
       goto exit;
-    } else if (rss_result == 404) { 
+    } else if (s44rasp_result == 404) { 
       printf("\rerror: not found.\n");
       goto exit;
-    } else if (rss_result != 200) {
-      printf("\rerror: communication error.\n");
+    } else if (s44rasp_result != 200) {
+      printf("\rerror: communication error. (%d)\n", s44rasp_result);
       goto exit;
     }
   }
@@ -246,18 +246,18 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
       header_ofs += strlen(mcs_file_buffer + header_ofs);
     }
     if (memcmp(mcs_file_buffer + header_ofs, "TITLE:", 6) == 0) {
-      printf("MACS Title   : %s\n", mcs_file_buffer + header_ofs + 6);
+      printf("MACS title   : %s\n", mcs_file_buffer + header_ofs + 6);
       header_ofs += strlen(mcs_file_buffer + header_ofs);
     }
     if (memcmp(mcs_file_buffer + header_ofs, "COMMENT:", 8) == 0) {
-      printf("MACS Comment : %s\n", mcs_file_buffer + header_ofs + 8);
+      printf("MACS comment : %s\n", mcs_file_buffer + header_ofs + 8);
       header_ofs += strlen(mcs_file_buffer + header_ofs);
     }
     header_ofs++;
   }
 
   // read body
-  printf("\nNow loading ... Press [ESC]/[Q] to cancel.\n");
+  printf("\nNow loading ... Press [SHIFT] to cancel.\n");
   uint32_t t0 = ONTIME();
   do {
     size_t remain = mcs_file_len - read_len;
@@ -265,12 +265,9 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
     if (len == 0) break;
     read_len += len;
     printf("\r%d/%d (%4.2f%%)", read_len, mcs_file_len, read_len * 100.0 / mcs_file_len);
-    if (B_KEYSNS() != 0) {
-      int16_t scan_code = B_KEYINP() >> 8;
-      if (scan_code == KEY_SCAN_CODE_ESC || scan_code == KEY_SCAN_CODE_Q) {
-        printf("\nCanceled.\n");
-        goto exit;
-      }
+    if (B_SFTSNS() & 0x01) {
+      printf("\nCanceled.\n");
+      goto exit;
     }
   } while (read_len < mcs_file_len);
 
@@ -287,25 +284,23 @@ loop:
 
   // play remote MCS
   if (use_remote_mcs) {
-    rss_play_pcm(&rss, remote_mcs_path, &uart);
+    s44rasp_play(&s44rasp, remote_mcs_path, &uart);
   }
 
   // play
-  int32_t rc_macs = macs_play(mcs_file_buffer);
+  int32_t rc_macs = macsdrv_play(mcs_file_buffer, use_remote_mcs);
+
+  // stop remote MCS
+  if (use_remote_mcs) {
+    s44rasp_stop(&s44rasp, &uart);
+  }
+
   if (rc_macs == -4) {
     printf("Aborted.\n");
-    goto exit;
-  } else if (rc_macs == -1) {
-    printf("error: not MACS data.\n");
     goto exit;
   } else if (rc_macs < 0) {
     printf("error: MACS call returned error code %d.\n", rc_macs);
     goto exit;
-  }
-
-  // stop remote MCS
-  if (use_remote_mcs) {
-    rss_stop_pcm(&rss, &uart);
   }
 
   // loop check
@@ -327,9 +322,9 @@ exit:
 
   if (use_remote_mcs) {
     // stop pcm
-    rss_stop_pcm(&rss, &uart);
-    // close rss
-    rss_close(&rss);
+    s44rasp_stop(&s44rasp, &uart);
+    // close s44rasp
+    s44rasp_close(&s44rasp);
     // close uart
     uart_close(&uart);
   }

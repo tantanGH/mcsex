@@ -7,7 +7,7 @@
 //
 //  MACS play
 //
-int32_t macs_play(void* data_addr) {
+int32_t macsdrv_play(void* data_addr, int16_t mute) {
 
     struct REGS in_regs = { 0 };
     struct REGS out_regs = { 0 };
@@ -15,6 +15,7 @@ int32_t macs_play(void* data_addr) {
     in_regs.d0 = 0xD0;
     in_regs.d1 = 0;
     in_regs.d2 = -1;
+    in_regs.d4 = mute ? 2 : 0;
     in_regs.a1 = (uint32_t)data_addr;
 
     TRAP15(&in_regs, &out_regs);
@@ -25,7 +26,7 @@ int32_t macs_play(void* data_addr) {
 //
 //  MACS status
 //
-int32_t macs_status() {
+int32_t macsdrv_status() {
 
     struct REGS in_regs = { 0 };
     struct REGS out_regs = { 0 };
@@ -42,7 +43,7 @@ int32_t macs_status() {
 //
 //  MACS abort
 //
-int32_t macs_abort() {
+int32_t macsdrv_abort() {
 
     struct REGS in_regs = { 0 };
     struct REGS out_regs = { 0 };
@@ -60,7 +61,7 @@ int32_t macs_abort() {
 //
 //  MACS version
 //
-int32_t macs_version() {
+int32_t macsdrv_version() {
 
     struct REGS in_regs = { 0 };
     struct REGS out_regs = { 0 };
@@ -76,7 +77,7 @@ int32_t macs_version() {
 //
 //  MACS register
 //
-int32_t macs_register(uint8_t* app_name) {
+int32_t macsdrv_register(uint8_t* app_name) {
 
     struct REGS in_regs = { 0 };
     struct REGS out_regs = { 0 };
@@ -93,7 +94,7 @@ int32_t macs_register(uint8_t* app_name) {
 //
 //  MACS unregister
 //
-int32_t macs_unregister(uint8_t* app_name) {
+int32_t macsdrv_unregister(uint8_t* app_name) {
 
     struct REGS in_regs = { 0 };
     struct REGS out_regs = { 0 };
@@ -110,7 +111,7 @@ int32_t macs_unregister(uint8_t* app_name) {
 //
 //  MACS data version
 //
-int32_t macs_data_version(void* data_addr) {
+int32_t macsdrv_data_version(void* data_addr) {
 
     struct REGS in_regs = { 0 };
     struct REGS out_regs = { 0 };
@@ -125,9 +126,25 @@ int32_t macs_data_version(void* data_addr) {
 }
 
 //
+//  MACS version (extended)
+//
+int32_t macsdrv_version_ext() {
+
+    struct REGS in_regs = { 0 };
+    struct REGS out_regs = { 0 };
+
+    in_regs.d0 = 0xD0;
+    in_regs.d1 = 17;
+
+    TRAP15(&in_regs, &out_regs);
+
+    return out_regs.d0;
+}
+
+//
 //  macsdrv keep check
 //
-int32_t macs_isavailable() {
+int32_t macsdrv_isavailable() {
 
   uint32_t eye_catch_addr = INTVCG(0x1d0) + 2;
 

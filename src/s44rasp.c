@@ -4,7 +4,7 @@
 #include <string.h>
 #include "himem.h"
 #include "uart.h"
-#include "rss.h"
+#include "s44rasp.h"
 
 // static buffers for RSSN APIs
 static uint8_t request_buf[ 512 ];
@@ -12,26 +12,26 @@ static uint8_t response_buf[ 1024 * 128 ];
 static uint8_t body_size_buf[ 16 ];
 
 //
-//  open rss
+//  open s44rasp
 //
-int32_t rss_open(RSS* rss) {
+int32_t s44rasp_open(S44RASP* s44rasp) {
 
   // use high memory if we can
-  rss->use_high_memory = himem_isavailable() ? 1 : 0;
+  s44rasp->use_high_memory = himem_isavailable() ? 1 : 0;
 
   return 0;
 }
 
 //
-//  close rss
+//  close s44rasp
 //
-void rss_close(RSS* rss) {
+void s44rasp_close(S44RASP* s44rasp) {
 }
 
 //
 //  check pcm remotely
 //
-int32_t rss_head_pcm(RSS* rss, const char* pcm_path, UART* uart, uint32_t* pcm_file_size) {
+int32_t s44rasp_head(S44RASP* s44rasp, const char* pcm_path, UART* uart, uint32_t* pcm_file_size) {
 
   // default return code
   int32_t rc = -1;
@@ -86,7 +86,7 @@ exit:
 //
 //  play pcm remotely
 //
-int32_t rss_play_pcm(RSS* rss, const char* pcm_path, UART* uart) {
+int32_t s44rasp_play(S44RASP* s44rasp, const char* pcm_path, UART* uart) {
 
   // default return code
   int32_t rc = -1;
@@ -134,9 +134,9 @@ exit:
 }
 
 //
-//  play pcm remotely
+//  stop pcm remotely
 //
-int32_t rss_stop_pcm(RSS* rss, UART* uart) {
+int32_t s44rasp_stop(S44RASP* s44rasp, UART* uart) {
 
   // default return code
   int32_t rc = -1;
