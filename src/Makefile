@@ -26,7 +26,7 @@ TARGET_FILE = MCSEX.X
 DOCUMENT_FILE = MCSEX.DOC
 
 # Distribution package 
-PACKAGE_FILE = ../MCSEX021.ZIP
+PACKAGE_FILE = ../MCSEX022.ZIP
 
 # ヘッダ検索パス
 INCLUDE_FLAGS = -I${XDEV68K_DIR}/include/xc -I${XDEV68K_DIR}/include/xdev68k

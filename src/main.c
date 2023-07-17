@@ -234,6 +234,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   printf("\n");
   printf("File name    : %s\n", mcs_file_name);
   printf("File size    : %d bytes\n", mcs_file_len);
+  printf("Data version : %X.%02X\n", mcs_file_buffer[8], mcs_file_buffer[9]);
   printf("PCM driver   : %s\n", use_remote_mcs ? "S44RASP" :
                                 use_pcm8a ? "PCM8A" :
                                 use_pcm8pp ? "PCM8PP" : "???");
