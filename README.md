@@ -17,6 +17,14 @@ Yet another high memory MACS loader for Human68k/X680x0
  - ループ回数指定可
  - 終了時キーバッファをクリア
 
+注意点：
+PhantomX 1.03c を 68040/68060 モードで使用する場合、FLOAT4.X は組み込まないようにしてください。
+
+* 68040 ... FLOAT2.X を使用する
+* 68060 ... 060turbo.sys を組み込み、FLOATは組み込まない
+
+そもそも整数演算の速いPhantomXではFPUエミュレーション機能を使用するFLOAT4.Xは非推奨の上、1.03c + 68040/68060ではFPU命令が呼び出されるとハングアップする場合があります。(ライトスルー・ライトバック共)
+
 ---
 
 ## How to Install
